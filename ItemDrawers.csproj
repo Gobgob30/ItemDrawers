@@ -13,6 +13,13 @@
         <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <LangVersion>latest</LangVersion>
+        <!-- This is where you set the base path for your profile -->
+        <ThunderstorePath>C:\Users\gobgo\AppData\Roaming\Thunderstore Mod Manager\DataFolder\Valheim\profiles\Normal\BepInEx\</ThunderstorePath>
+        <ProfilePath>$(ThunderstorePath)core\</ProfilePath>
+        <PluginPath>$(ThunderstorePath)plugins\</PluginPath>
+        <!-- This is where you set the steam library path of your game -->
+        <SteamLibraryPath>..\..\SteamLibrary\steamapps\common\</SteamLibraryPath>
+        <ValheimPath>%(SteamLibraryPath)Valheim\valheim_Data\Managed\</ValheimPath>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -36,82 +43,82 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
-        <Reference Include="0Harmony">
-          <HintPath>Libs\0Harmony.dll</HintPath>
-        </Reference>
-        <Reference Include="assembly_guiutils">
-          <HintPath>Libs\assembly_guiutils.dll</HintPath>
-        </Reference>
-        <Reference Include="assembly_postprocessing">
-          <HintPath>Libs\assembly_postprocessing.dll</HintPath>
-        </Reference>
-        <Reference Include="assembly_utils">
-          <HintPath>Libs\assembly_utils.dll</HintPath>
-        </Reference>
-        <Reference Include="assembly_valheim">
-          <HintPath>Libs\assembly_valheim.dll</HintPath>
-        </Reference>
-        <Reference Include="BepInEx">
-          <HintPath>Libs\BepInEx.dll</HintPath>
-        </Reference>
         <Reference Include="fastJSON">
           <HintPath>Libs\fastJSON.dll</HintPath>
+        </Reference>
+        <Reference Include="0Harmony">
+          <HintPath>%(ProfilePath)0Harmony.dll</HintPath>
+        </Reference>
+        <Reference Include="BepInEx">
+          <HintPath>%(ProfilePath)BepInEx.dll</HintPath>
+        </Reference>
+        <Reference Include="assembly_guiutils">
+          <HintPath>%(ValheimPath)assembly_guiutils.dll</HintPath>
+        </Reference>
+        <Reference Include="assembly_postprocessing">
+          <HintPath>%(ValheimPath)assembly_postprocessing.dll</HintPath>
+        </Reference>
+        <Reference Include="assembly_utils">
+          <HintPath>%(ValheimPath)assembly_utils.dll</HintPath>
+        </Reference>
+        <Reference Include="assembly_valheim">
+          <HintPath>%(ValheimPath)assembly_valheim.dll</HintPath>
+        </Reference>
+        <Reference Include="ui_lib">
+          <HintPath>%(ValheimPath)ui_lib.dll</HintPath>
+        </Reference>
+        <Reference Include="Unity.TextMeshPro">
+          <HintPath>%(ValheimPath)Unity.TextMeshPro.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine">
+          <HintPath>%(ValheimPath)UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.AnimationModule">
+          <HintPath>%(ValheimPath)UnityEngine.AnimationModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.AssetBundleModule">
+          <HintPath>%(ValheimPath)UnityEngine.AssetBundleModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.AudioModule">
+          <HintPath>%(ValheimPath)UnityEngine.AudioModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+          <HintPath>%(ValheimPath)UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.ImageConversionModule">
+          <HintPath>%(ValheimPath)UnityEngine.ImageConversionModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.IMGUIModule">
+          <HintPath>%(ValheimPath)UnityEngine.IMGUIModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.InputLegacyModule">
+          <HintPath>%(ValheimPath)UnityEngine.InputLegacyModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.ParticleSystemModule">
+          <HintPath>%(ValheimPath)UnityEngine.ParticleSystemModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.PhysicsModule">
+          <HintPath>%(ValheimPath)UnityEngine.PhysicsModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UI">
+          <HintPath>%(ValheimPath)UnityEngine.UI.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UIElementsModule">
+          <HintPath>%(ValheimPath)UnityEngine.UIElementsModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UIElementsNativeModule">
+          <HintPath>%(ValheimPath)UnityEngine.UIElementsNativeModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.UIModule">
+          <HintPath>%(ValheimPath)UnityEngine.UIModule.dll</HintPath>
         </Reference>
         <Reference Include="System"/>
         <Reference Include="System.Core"/>
         <Reference Include="System.Data"/>
         <Reference Include="System.Xml"/>
-        <Reference Include="ui_lib">
-          <HintPath>Libs\ui_lib.dll</HintPath>
-        </Reference>
-        <Reference Include="Unity.TextMeshPro">
-          <HintPath>Libs\Unity.TextMeshPro.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine">
-          <HintPath>Libs\UnityEngine.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.AnimationModule">
-          <HintPath>Libs\UnityEngine.AnimationModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.AssetBundleModule">
-          <HintPath>Libs\UnityEngine.AssetBundleModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.AudioModule">
-          <HintPath>Libs\UnityEngine.AudioModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.CoreModule">
-          <HintPath>Libs\UnityEngine.CoreModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.ImageConversionModule">
-          <HintPath>Libs\UnityEngine.ImageConversionModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.IMGUIModule">
-          <HintPath>Libs\UnityEngine.IMGUIModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.InputLegacyModule">
-          <HintPath>Libs\UnityEngine.InputLegacyModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.ParticleSystemModule">
-          <HintPath>Libs\UnityEngine.ParticleSystemModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.PhysicsModule">
-          <HintPath>Libs\UnityEngine.PhysicsModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.UI">
-          <HintPath>Libs\UnityEngine.UI.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.UIElementsModule">
-          <HintPath>Libs\UnityEngine.UIElementsModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.UIElementsNativeModule">
-          <HintPath>Libs\UnityEngine.UIElementsNativeModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.UIModule">
-          <HintPath>Libs\UnityEngine.UIModule.dll</HintPath>
-        </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="API.cs" />
+        <!-- <Compile Include="API.cs" /> -->
         <Compile Include="DrawerComponent.cs" />
         <Compile Include="ItemDrawers.cs" />
         <Compile Include="Managers\PieceManager.cs" />
@@ -140,12 +147,12 @@
     -->
 
 
-    <Target Name="Copy" AfterTargets="Build">
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;D:\SteamLibrary\steamapps\common\Valheim\BepInEx\plugins\$(AssemblyName).dll&quot;" />
+    <Target Name="Mv_dll" AfterTargets="Build">
+        <Exec Command="powershell -File onBuild.ps1 &quot;$(TargetDir)$(TargetName)$(TargetExt)&quot; &quot;$(ThunderstorePath)$(PluginPath)$(TargetName)\$(TargetName)$(TargetExt)&quot;" />
         <Exec Command="pdb2mdb.exe &quot;$(TargetDir)$(AssemblyName).dll&quot;" />
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll.mdb&quot; &quot;D:\SteamLibrary\steamapps\common\Valheim\BepInEx\plugins\$(AssemblyName).dll.mdb&quot;" />
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(ProjectDir)ThunderstorePackage\$(AssemblyName).dll&quot;" />
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll.mdb&quot; &quot;$(ProjectDir)ThunderstorePackage\$(AssemblyName).dll.mdb&quot;" />
+        <Exec Command="powershell -File onBuild.ps1 &quot;$(TargetDir)$(TargetName).dll.mdb&quot; &quot;$(ThunderstorePath)$(PluginPath)$(TargetName)\$(TargetName).dll.mdb&quot;" />
+        <Exec Command="powershell -File onBuild.ps1 &quot;$(TargetDir)$(TargetName).dll&quot; &quot;$(ProjectDir)ThunderstorePackage\$(TargetName).dll&quot;" />
+        <Exec Command="powershell -File onBuild.ps1 &quot;$(TargetDir)$(TargetName).dll.mdb&quot; &quot;$(ProjectDir)ThunderstorePackage\$(TargetName).dll.mdb&quot;" />
     </Target>
 
 </Project>

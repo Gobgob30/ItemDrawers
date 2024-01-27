@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -7,18 +8,18 @@ using JetBrains.Annotations;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 
 namespace kg_ItemDrawers;
-
-public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
+public class DrawerComponent : Container
 {
-    public static readonly List<DrawerComponent> AllDrawers = [];
+    public static readonly List<DrawerComponent> AllDrawers = new List<DrawerComponent>();
     private static Sprite _defaultSprite;
-    public ZNetView _znv { private set; get; }
-    private Image _image;
-    private TMP_Text _text; 
-    
+    // public ZNetView m_nview { private set; get; }
+    private UnityEngine.UI.Image _image;
+    private TMP_Text _text;
+
     //UI
     private static bool ShowUI;
     private static DrawerOptions CurrentOptions;
@@ -26,26 +27,26 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
     public string CurrentPrefab
     {
-        get => _znv.m_zdo.GetString("Prefab");
-        set => _znv.m_zdo.Set("Prefab", value);
+        get => m_nview.m_zdo.GetString("Prefab");
+        set => m_nview.m_zdo.Set("Prefab", value);
     }
 
     public int CurrentAmount
     {
-        get => _znv.m_zdo.GetInt("Amount");
-        set => _znv.m_zdo.Set("Amount", value);
+        get => m_nview.m_zdo.GetInt("Amount");
+        set => m_nview.m_zdo.Set("Amount", value);
     }
 
     public int PickupRange
     {
-        get => _znv.m_zdo.GetInt("PickupRange", ItemDrawers.DrawerPickupRange.Value);
-        set => _znv.m_zdo.Set("PickupRange", value);
+        get => m_nview.m_zdo.GetInt("PickupRange", ItemDrawers.DrawerPickupRange.Value);
+        set => m_nview.m_zdo.Set("PickupRange", value);
     }
 
-    private Color CurrentColor 
+    private Color CurrentColor
     {
-        get => global::Utils.Vec3ToColor(_znv.m_zdo.GetVec3("Color", ItemDrawers.DefaultColor.Value));
-        set => _znv.m_zdo.Set("Color", global::Utils.ColorToVec3(value));
+        get => global::Utils.Vec3ToColor(m_nview.m_zdo.GetVec3("Color", ItemDrawers.DefaultColor.Value));
+        set => m_nview.m_zdo.Set("Color", global::Utils.ColorToVec3(value));
     }
 
     public bool ItemValid => !string.IsNullOrEmpty(CurrentPrefab) && ObjectDB.instance.m_itemByHash.ContainsKey(CurrentPrefab.GetStableHashCode());
@@ -74,27 +75,65 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     private void OnDestroy() => AllDrawers.Remove(this);
     private void Awake()
     {
-        _znv = GetComponent<ZNetView>();
-        if (!_znv.IsValid()) return;
-        AllDrawers.Add(this);
-        _image = transform.Find("Cube/Canvas/Image").GetComponent<Image>();
-        _defaultSprite ??= _image.sprite;
-        _text = transform.Find("Cube/Canvas/Text").GetComponent<TMP_Text>();
-        _text.color = CurrentColor;
-        _znv.Register<string, int>("AddItem_Request", RPC_AddItem);
-        _znv.Register<string, int>("AddItem_Player", RPC_AddItem_Player);
-        _znv.Register<int>("WithdrawItem_Request", RPC_WithdrawItem_Request);
-        _znv.Register<string, int>("UpdateIcon", RPC_UpdateIcon);
-        _znv.Register<int>("ForceRemove", RPC_ForceRemove);
-        _znv.Register<DrawerOptions>("ApplyOptions", RPC_ApplyOptions);
-        RPC_UpdateIcon(0, CurrentPrefab, CurrentAmount);
-        float randomTime = Random.Range(2.5f, 3f);
-        InvokeRepeating(nameof(Repeat), randomTime, randomTime);
+        m_nview = (m_rootObjectOverride ? m_rootObjectOverride.GetComponent<ZNetView>() : GetComponent<ZNetView>());
+        m_width = 1;
+        m_height = 1;
+        if (m_nview.GetZDO() != null)
+        {
+            ZLog.Log("DrawerComponent: " + m_nview.GetZDO().GetString("Prefab"));
+            m_inventory = new Inventory(m_name, m_bkg, m_width, m_height);
+            Inventory inventory = m_inventory;
+            inventory.m_onChanged = (Action)Delegate.Combine(inventory.m_onChanged, new Action(OnContainerChanged));
+            m_piece = GetComponent<Piece>();
+            if ((bool)m_nview)
+            {
+                m_nview.Register<long>("RequestOpen", RPC_RequestOpen);
+                m_nview.Register<bool>("OpenRespons", RPC_OpenRespons);
+                m_nview.Register<long>("RPC_RequestStack", RPC_RequestStack);
+                m_nview.Register<bool>("RPC_StackResponse", RPC_StackResponse);
+                m_nview.Register<long>("RequestTakeAll", RPC_RequestTakeAll);
+                m_nview.Register<bool>("TakeAllRespons", RPC_TakeAllRespons);
+            }
+
+            WearNTear wearNTear = (m_rootObjectOverride ? m_rootObjectOverride.GetComponent<WearNTear>() : GetComponent<WearNTear>());
+            if ((bool)wearNTear)
+            {
+                wearNTear.m_onDestroyed = (Action)Delegate.Combine(wearNTear.m_onDestroyed, new Action(OnDestroyed));
+            }
+
+            Destructible destructible = (m_rootObjectOverride ? m_rootObjectOverride.GetComponent<Destructible>() : GetComponent<Destructible>());
+            if ((bool)destructible)
+            {
+                destructible.m_onDestroyed = (Action)Delegate.Combine(destructible.m_onDestroyed, new Action(OnDestroyed));
+            }
+
+            if (m_nview.IsOwner() && !m_nview.GetZDO().GetBool(ZDOVars.s_addedDefaultItems))
+            {
+                AddDefaultItems();
+                m_nview.GetZDO().Set(ZDOVars.s_addedDefaultItems, value: true);
+            }
+
+            InvokeRepeating("CheckForChanges", 0f, 1f);
+            if (!m_nview.IsValid()) return;
+            AllDrawers.Add(this);
+            _image = transform.Find("Cube/Canvas/Image").GetComponent<UnityEngine.UI.Image>();
+            _defaultSprite ??= _image.sprite;
+            _text = transform.Find("Cube/Canvas/Text").GetComponent<TMP_Text>();
+            _text.color = CurrentColor;
+            m_nview.Register<string, int>("AddItem_Request", RPC_AddItem);
+            m_nview.Register<string, int>("AddItem_Player", RPC_AddItem_Player);
+            m_nview.Register<int>("WithdrawItem_Request", RPC_WithdrawItem_Request);
+            m_nview.Register<string, int>("UpdateIcon", RPC_UpdateIcon);
+            m_nview.Register<int>("ForceRemove", RPC_ForceRemove);
+            m_nview.Register<DrawerOptions>("ApplyOptions", RPC_ApplyOptions);
+            RPC_UpdateIcon(0, CurrentPrefab, CurrentAmount);
+            InvokeRepeating(nameof(Repeat), 2.5f, 2.5f);
+        }
     }
 
     private void RPC_ApplyOptions(long sender, DrawerOptions options)
     {
-        if (_znv.IsOwner())
+        if (m_nview.IsOwner())
         {
             CurrentColor = options.color;
             PickupRange = Mathf.Min(ItemDrawers.MaxDrawerPickupRange.Value, options.pickupRange);
@@ -106,7 +145,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     {
         amount = Mathf.Min(amount, CurrentAmount);
         CurrentAmount -= amount;
-        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
+        m_nview.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
     }
 
     private void RPC_WithdrawItem_Request(long sender, int amount)
@@ -115,15 +154,15 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         {
             CurrentPrefab = "";
             CurrentAmount = 0;
-            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", "", 0);
+            m_nview.InvokeRPC(ZNetView.Everybody, "UpdateIcon", "", 0);
             return;
         }
 
         if (amount <= 0) return;
         amount = Mathf.Min(amount, CurrentAmount);
         CurrentAmount -= amount;
-        _znv.InvokeRPC(sender, "AddItem_Player", CurrentPrefab, amount);
-        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
+        m_nview.InvokeRPC(sender, "AddItem_Player", CurrentPrefab, amount);
+        m_nview.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
     }
 
     private void RPC_AddItem_Player(long _, string prefab, int amount) => Utils.InstantiateItem(ZNetScene.instance.GetPrefab(prefab), amount, 1);
@@ -136,15 +175,22 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             _text.gameObject.SetActive(false);
             return;
         }
-
-        _image.sprite = ObjectDB.instance.GetItemPrefab(prefab).GetComponent<ItemDrop>().m_itemData.GetIcon();
+        GameObject prefabObject = ObjectDB.instance.GetItemPrefab(prefab);
+        _image.sprite = prefabObject.GetComponent<ItemDrop>().m_itemData.GetIcon();
         _text.text = amount.ToString();
         _text.gameObject.SetActive(true);
+        ItemDrop.ItemData d = m_inventory.GetItemAt(0, 0);
+        if (d != null && d.m_dropPrefab.name == prefab)
+        {
+            d.m_stack = amount;
+            m_inventory.Changed();
+        }
+        else m_inventory.AddItem(prefab, amount, 1, 0, 0, "");
     }
 
     private void RPC_AddItem(long sender, string prefab, int amount)
     {
-        if (!_znv.IsOwner()) return;
+        if (!m_nview.IsOwner()) return;
         if (amount <= 0) return;
         if (ItemValid && CurrentPrefab != prefab)
         {
@@ -155,13 +201,13 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         int newAmount = ItemValid ? (CurrentAmount + amount) : amount;
         CurrentAmount = newAmount;
         if (CurrentPrefab != prefab) CurrentPrefab = prefab;
-        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount);
+        m_nview.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount);
     }
 
     private bool DoRepeat => Player.m_localPlayer && ItemValid && PickupRange > 0;
     private void Repeat()
     {
-        if (!_znv.IsOwner()) return;
+        if (!m_nview.IsOwner()) return;
         if (!DoRepeat) return;
 
         Vector3 vector = transform.position + Vector3.up;
@@ -180,7 +226,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             component.m_nview.ClaimOwnership();
             ZNetScene.instance.Destroy(component.gameObject);
             CurrentAmount += amount;
-            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
+            m_nview.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
         }
     }
 
@@ -199,7 +245,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
         if (Input.GetKey(KeyCode.LeftAlt))
         {
-            _znv.InvokeRPC("WithdrawItem_Request", 1);
+            m_nview.InvokeRPC("WithdrawItem_Request", 1);
             return true;
         }
 
@@ -208,11 +254,11 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             int amount = Utils.CustomCountItems(CurrentPrefab, 1);
             if (amount <= 0) return true;
             Utils.CustomRemoveItems(CurrentPrefab, amount, 1);
-            _znv.InvokeRPC("AddItem_Request", CurrentPrefab, amount);
+            m_nview.InvokeRPC("AddItem_Request", CurrentPrefab, amount);
             return true;
         }
 
-        _znv.InvokeRPC("WithdrawItem_Request", ItemMaxStack);
+        m_nview.InvokeRPC("WithdrawItem_Request", ItemMaxStack);
         return true;
     }
 
@@ -229,7 +275,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         int amount = item.m_stack;
         if (amount <= 0) return false;
         user.m_inventory.RemoveItem(item);
-        _znv.InvokeRPC("AddItem_Request", dropPrefab, amount);
+        m_nview.InvokeRPC("AddItem_Request", dropPrefab, amount);
         return true;
     }
 
@@ -267,7 +313,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     {
         return "Item Drawer";
     }
-    
+
     private const int windowWidth = 300;
     private const int windowHeight = 300;
     private const int halfWindowWidth = windowWidth / 2;
@@ -289,7 +335,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     }
     private static void Window(int id)
     {
-        if (CurrentOptions.drawer == null || !CurrentOptions.drawer._znv.IsValid())
+        if (CurrentOptions.drawer == null || !CurrentOptions.drawer.m_nview.IsValid())
         {
             ShowUI = false;
             return;
@@ -308,13 +354,13 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         CurrentOptions.color = new Color32(r, g, b, 255);
         int pickupRange = CurrentOptions.pickupRange;
         GUILayout.Space(16f);
-        GUILayout.Label($"Pickup Range: <color={(pickupRange > 0 ? "lime" : "red")}><b>{pickupRange}</b></color>"); 
+        GUILayout.Label($"Pickup Range: <color={(pickupRange > 0 ? "lime" : "red")}><b>{pickupRange}</b></color>");
         pickupRange = (int)GUILayout.HorizontalSlider(pickupRange, 0, ItemDrawers.MaxDrawerPickupRange.Value);
         CurrentOptions.pickupRange = pickupRange;
         GUILayout.Space(16f);
         if (GUILayout.Button("<color=lime>Apply</color>"))
         {
-            CurrentOptions.drawer._znv.InvokeRPC(ZNetView.Everybody, "ApplyOptions", CurrentOptions);
+            CurrentOptions.drawer.m_nview.InvokeRPC(ZNetView.Everybody, "ApplyOptions", CurrentOptions);
             ShowUI = false;
         }
     }
@@ -328,7 +374,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             yield return AccessTools.Method(typeof(TextInput), nameof(TextInput.IsVisible));
             yield return AccessTools.Method(typeof(StoreGui), nameof(StoreGui.IsVisible));
         }
-        
+
         [HarmonyPostfix, UsedImplicitly]
         private static void SetTrue(ref bool __result) => __result |= ShowUI;
     }
@@ -349,4 +395,3 @@ public static class Piece_OnDestroy_Patch
         }
     }
 }
-
